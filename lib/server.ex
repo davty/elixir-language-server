@@ -1,62 +1,38 @@
+require Logger
+
 defmodule Exls.Server do
+  @options [:binary, packet: :line, active: false, reuseaddr: true]
 
-  use GenServer
+  def start(port) do
+    {:ok, socket} = :gen_tcp.listen(port, @options)
+    Logger.info "Listening on port #{port}."
+    loop_acceptor(socket)
+  end
+  
+  defp loop_acceptor(socket) do
+    Logger.debug "Accepting new clients."
+    IO.inspect socket
+    {:ok, client} = :gen_tcp.accept(socket, 20000)
+    Logger.debug "client acccepted."
+    {:ok, pid} = Task.Supervisor.start_child(Exls.TaskSupervisor, fn -> read_message(client) end)
 
-  @initial_state %{socket: nil, port: nil, options: nil}
+    :gen_tcp.controlling_process(client, pid)
 
-  def start_link(port) do
-    GenServer.start_link(__MODULE__, %{@initial_state | port: port})
+    loop_acceptor(socket)
   end
 
-  def init(state) do
-    opts = [:binary, active: false]
-    case :gen_tcp.connect('127.0.0.1', state[:port], opts) do
-      {:ok, socket} -> {:ok, %{state | socket: socket}}
+
+  defp read_message(client) do
+    case :gen_tcp.recv(client, 0) do
+      {:ok, "\r\n"} -> :gen_tcp.close(client)
+      {:ok, message} ->
+        message |> Exls.Worker.handle_message |> send_message(client)
+        read_message(client)
+      {:error, _} -> :gen_tcp.close(client)
     end
   end
 
-  def command(pid, cmd) do
-    GenServer.call(pid, {:command, cmd})
-  end
-
-   def command(pid) do
-    GenServer.call(pid, :command, :infinity)
-  end
-
-  def initialize(pid) do
-    GenServer.call(pid, :initialize)
-  end
-
-  defp content_length(socket) do
-    
-    {:ok, msg} = :gen_tcp.recv(socket, 0)
-    msg
-      |> String.trim
-      |> String.split
-      |> Enum.at(1)
-      |> String.to_integer
-  end
-
-  def handle_call(:initialize, _from, %{socket: socket} = state) do
-    {:ok, msg} = :gen_tcp.recv(socket, content_length(socket))
-    options = Poison.decode!(msg)
-    serverCapabilities = %{capabilities: [%{textDocumentSync: true}]}
-    {:ok, a} = create(options["id"], serverCapabilities)
-    :gen_tcp.send(socket, a)
-    {:reply, msg, %{state | options: options}}
-  end
-
-  defp create(id, result) do
-    encoded = Poison.encode!(%{id: id, result: result})
-    IO.inspect "create"
-    IO.inspect encoded
-    {:ok, "Content-Length: " <> "#{byte_size(encoded)}" <> "\r\n" <> encoded <> "\r\n\r\n"}
-  end
-
-  def handle_call(:command, _from, %{socket: socket} = state) do
-   {:ok, msg} = :gen_tcp.recv(socket, 0)
-   IO.inspect "command?"
-   IO.inspect msg
-   {:ok, msg}
+  defp send_message(client, message) do
+    :gen_tcp.send(client, message)
   end
 end
