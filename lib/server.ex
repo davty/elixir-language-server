@@ -1,35 +1,28 @@
 require Logger
 
 defmodule Exls.Server do
-  @options [:binary, packet: :line, active: false, reuseaddr: true]
+  @options [:binary, active: false]
 
   def start(port) do
+    Logger.info "Language server started."
     {:ok, socket} = :gen_tcp.listen(port, @options)
-    Logger.info "Listening on port #{port}."
+    Logger.debug "Listening on port #{port}."
     loop_acceptor(socket)
   end
   
   defp loop_acceptor(socket) do
-    Logger.debug "Accepting new clients."
-    IO.inspect socket
-    {:ok, client} = :gen_tcp.accept(socket, 20000)
-    Logger.debug "client acccepted."
-    {:ok, pid} = Task.Supervisor.start_child(Exls.TaskSupervisor, fn -> read_message(client) end)
+    {:ok, client} = :gen_tcp.accept(socket)
+    Logger.debug "Client connected."
+    {:ok, pid} = Task.Supervisor.start_child(Exls.TaskSupervisor, fn -> handle_client(client) end)
 
     :gen_tcp.controlling_process(client, pid)
 
     loop_acceptor(socket)
   end
 
-
-  defp read_message(client) do
-    case :gen_tcp.recv(client, 0) do
-      {:ok, "\r\n"} -> :gen_tcp.close(client)
-      {:ok, message} ->
-        message |> Exls.Worker.handle_message |> send_message(client)
-        read_message(client)
-      {:error, _} -> :gen_tcp.close(client)
-    end
+  defp handle_client(client) do
+    Exls.Worker.handle_message(client)
+    {:ok, "wat"}
   end
 
   defp send_message(client, message) do

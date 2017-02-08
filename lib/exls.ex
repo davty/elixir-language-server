@@ -5,7 +5,7 @@ defmodule Exls do
 
     children = [
       supervisor(Task.Supervisor, [[name: Exls.TaskSupervisor]]),
-      worker(Task, [Exls.Server, :start, [4040]]),
+      worker(Task, [Exls.Server, :start, [63213]]),
     ]
 
     opts = [strategy: :one_for_one, name: Exls.Supervisor]
