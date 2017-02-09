@@ -4,7 +4,7 @@ defmodule Exls.Server do
   @options [:binary, active: false]
 
   def start(port) do
-    Logger.info "Language server started."
+    Logger.info "Language servers started."
     {:ok, socket} = :gen_tcp.listen(port, @options)
     Logger.debug "Listening on port #{port}."
     loop_acceptor(socket)
@@ -21,7 +21,8 @@ defmodule Exls.Server do
   end
 
   defp handle_client(client) do
-    Exls.Worker.handle_message(client)
+    {:ok, agent} = Agent.start_link fn -> -1 end
+    Exls.Worker.handle_message(client, agent)
     {:ok, "wat"}
   end
 
