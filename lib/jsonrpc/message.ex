@@ -1,4 +1,4 @@
-defmodule Exls.Jsonrpc.Message do
+defmodule Exls.JSONRPC.Message do
   
 
 end

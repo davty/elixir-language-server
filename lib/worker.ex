@@ -1,6 +1,9 @@
 require Logger
 
 defmodule Exls.Worker do
+  @moduledoc """
+   Worker module
+  """
 
   alias Exls.Protocol.Reader
   alias Exls.Protocol.Writer
@@ -10,41 +13,52 @@ defmodule Exls.Worker do
   def handle_message(client, agent) do
     message = Reader.read(client)
     Logger.debug "<#{id(agent)}> Got message, method: #{message["method"]}"
-    case message["method"] do 
+    case message["method"] do
       "initialize" -> initialize(client, message, agent)
-     # "textDocument/didChange" -> _ #text_document_did_change(client, message, agent)
+      "textDocument/didChange" -> text_document_did_change(client, message, agent)
       "textDocument/didOpen" -> text_document_did_change(client, message, agent)
-      _ -> IO.puts("no freakinsssssidsess!")
+      "textDocument/didSave" -> text_document_did_change(client, message, agent)
+      "textDocument/hover" -> hover(client, message, agent)
+      _ -> IO.puts("no!")
     end
-    handle_message(client, agent)
+
+    unless message["method"] == "shutdown" do
+      handle_message(client, agent)
+    end
   end
 
   def id(agent) do
     Agent.get(agent, fn x -> x end)
   end
-  
+
+  def hover(client, request, agent) do
+    #message = %{uri: uri, diagnostics: Exls.Credo.run(text)}
+    #Writer.notification(client, id(agent), "textDocument/publishDiagnostics", message)
+
+
+    message = %{
+      contents: "what? hmm? :)"
+    }
+    IO.inspect request
+    Writer.write(client, request["id"], message)
+  end
+
   def text_document_did_change(client, notification, agent) do
-   # Writer.notification(client, id(agent), "window/showMessage", %{type: 3, message: "hej!!"})
-    #Writer.notification(client, id(agent), "window/logMessage", %{type: 1, message: "hej!!"})
-    
     uri = notification["params"]["textDocument"]["uri"]
-    
     text = notification["params"]["textDocument"]["text"]
-    source = Credo.SourceFile.parse(text, "example.ex")
-    default = Credo.Check.Runner.prepare_config source, Exls.DefaultConfig.default
-    checked = Credo.Check.Runner.run source, default
-    
-    IO.inspect checked
-
-    message = %{uri: uri, diagnostics: [%{message: "hmmss??", range: %Range{}}]}
-
-
+    message = %{uri: uri, diagnostics: Exls.Credo.run(text)}
     Writer.notification(client, id(agent), "textDocument/publishDiagnostics", message)
   end
 
   def initialize(client, request, agent) do
     Agent.update(agent, fn x -> request["id"] end)
-    message = %{capabilities: %{textDocumentSync: 1, documentFormattingProvider: true}}
+    message = %{capabilities: 
+      %{textDocumentSync: 1, 
+        documentFormattingProvider: true,
+        hoverProvider: true,
+        signatureHelpProvider: %{triggerCharacters: ["("]}}
+    }
+    IO.inspect request
     Writer.write(client, request["id"], message)
   end
 end

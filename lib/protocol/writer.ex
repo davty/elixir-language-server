@@ -6,7 +6,6 @@ defmodule Exls.Protocol.Writer do
     body = Poison.encode!(%{method: method, params: params, jsonrpc: "2.0"})
     header = content_length_header(byte_size(body))
     message = header <> body
-    Logger.debug message
     :gen_tcp.send(socket, message)
   end
 

@@ -17,6 +17,8 @@ defmodule Exls.Mixfile do
 
   defp deps do
     [{:poison, "~> 3.0"},
-     {:credo, "~> 0.6.1"}]
+     {:credo, "~> 0.6.1"},
+     {:mix_test_watch, "~> 0.3", only: :dev, runtime: false}
+     ]
   end
 end

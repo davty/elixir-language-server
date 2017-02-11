@@ -23,7 +23,6 @@ defmodule Exls.Server do
   defp handle_client(client) do
     {:ok, agent} = Agent.start_link fn -> -1 end
     Exls.Worker.handle_message(client, agent)
-    {:ok, "wat"}
   end
 
   defp send_message(client, message) do
