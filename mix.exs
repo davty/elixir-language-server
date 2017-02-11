@@ -16,6 +16,7 @@ defmodule Exls.Mixfile do
   end
 
   defp deps do
-    [{:poison, "~> 3.0"}]
+    [{:poison, "~> 3.0"},
+     {:credo, "~> 0.6.1"}]
   end
 end

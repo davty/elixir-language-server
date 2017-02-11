@@ -24,11 +24,21 @@ defmodule Exls.Worker do
   end
   
   def text_document_did_change(client, notification, agent) do
-    Writer.notification(client, id(agent), "window/showMessage", %{type: 3, message: "hej!!"})
+   # Writer.notification(client, id(agent), "window/showMessage", %{type: 3, message: "hej!!"})
     #Writer.notification(client, id(agent), "window/logMessage", %{type: 1, message: "hej!!"})
     
     uri = notification["params"]["textDocument"]["uri"]
+    
+    text = notification["params"]["textDocument"]["text"]
+    source = Credo.SourceFile.parse(text, "example.ex")
+    default = Credo.Check.Runner.prepare_config source, Exls.DefaultConfig.default
+    checked = Credo.Check.Runner.run source, default
+    
+    IO.inspect checked
+
     message = %{uri: uri, diagnostics: [%{message: "hmmss??", range: %Range{}}]}
+
+
     Writer.notification(client, id(agent), "textDocument/publishDiagnostics", message)
   end
 
