@@ -1,4 +1,6 @@
-WIP - Elixir Language Server Experimentation 
+WIP - Elixir Language Server Experimentation
+
+[![Build Status](https://travis-ci.org/davty/elixir-language-server.svg?branch=master)](https://travis-ci.org/davty/elixir-language-server)
 
 Currently supports:
  linting (credo)
