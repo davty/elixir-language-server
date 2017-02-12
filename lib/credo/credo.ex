@@ -19,7 +19,7 @@ defmodule Exls.Credo do
       {_, report} = Suggest.run_checks source, default
       report.issues
     rescue
-      e -> [%{message: "Compilation issue.", category: "compilation", line_no: 0, column: 0, range: %Range{}}]
+      _ -> [%{message: "Compilation issue.", category: "compilation", line_no: 0, column: 0, range: %Range{}}]
     end
 
     Enum.map(issues, &transform/1)

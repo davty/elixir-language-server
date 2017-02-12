@@ -12,7 +12,10 @@ defmodule Exls.Mixfile do
   end
 
   def application do
-    [applications: [:logger]]
+    [applications: [:logger, :iex],
+     env: [
+       inspect: [pretty: true]
+     ]]
   end
 
   defp deps do

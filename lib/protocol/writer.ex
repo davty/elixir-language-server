@@ -2,7 +2,7 @@ require Logger
 
 defmodule Exls.Protocol.Writer do
 
-  def notification(socket, id, method, params) do
+  def notification(socket, method, params) do
     body = Poison.encode!(%{method: method, params: params, jsonrpc: "2.0"})
     header = content_length_header(byte_size(body))
     message = header <> body

@@ -22,10 +22,8 @@ defmodule Exls.Server do
 
   defp handle_client(client) do
     {:ok, agent} = Agent.start_link fn -> -1 end
+   # evaluator = IEx.Server.start([], [])
+   # Process.put(:evaluator, evaluator)
     Exls.Worker.handle_message(client, agent)
-  end
-
-  defp send_message(client, message) do
-    :gen_tcp.send(client, message)
   end
 end
