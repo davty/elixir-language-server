@@ -9,17 +9,17 @@ defmodule Exls.Credo do
   alias Credo.Config
   alias Credo.CLI.Command.Suggest
 
-  @spec run(String.t) :: List.t
-  def run(text) do
+  @spec run(String.t, String.t) :: List.t
+  def run(text, filename) do
     issues = try do
       Credo.start nil, nil
 
-      source = SourceFile.parse(text, "example.ex")
+      source = SourceFile.parse(text, filename)
       default = Config.read_or_default "."
       {_, report} = Suggest.run_checks source, default
       report.issues
     rescue
-      _ -> [%{message: "Compilation issue.", category: "compilation", line_no: 0, column: 0, range: %Range{}}]
+      _ -> [%{message: "Compilation issue.", category: "compilation", line_no: 5, column: 5, range: %Range{}}]
     end
 
     Enum.map(issues, &transform/1)

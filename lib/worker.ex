@@ -17,7 +17,10 @@ defmodule Exls.Worker do
       "textDocument/didOpen" -> text_document_did_change(client, message)
       "textDocument/didSave" -> text_document_did_change(client, message)
       "textDocument/hover" -> hover(client, message)
-       _ -> method_not_found(client)
+      "initialized" -> Logger.debug "Not implemented yet"
+      "$/setTraceNotification" -> Logger.debug "Not implemented yet"
+      "workspace/didChangeConfiguration" -> Logger.debug "Not implemented yet"
+       _ -> method_not_found(client, message["method"])
     end
 
     unless message["method"] == "shutdown" do
@@ -25,8 +28,8 @@ defmodule Exls.Worker do
     end
   end
 
-  def method_not_found(client) do
-    Writer.error(client, -32601, "Method not implemented.")
+  def method_not_found(client, method) do
+    Writer.error(client, -32601, "Method not implemented." <> method)
   end
 
   def handle_message(client, agent) do
@@ -54,9 +57,12 @@ defmodule Exls.Worker do
 
 
   def text_document_did_change(client, notification) do
+
     uri = notification["params"]["textDocument"]["uri"]
     text = notification["params"]["textDocument"]["text"]
-    message = %{uri: uri, diagnostics: Exls.Credo.run(text)}
+    
+
+    message = %{uri: uri, diagnostics: Exls.Credo.run(text, uri)}
     Writer.notification(client, "textDocument/publishDiagnostics", message)
   end
 

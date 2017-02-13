@@ -8,7 +8,7 @@ defmodule Exls.Server do
 
     children = [
       supervisor(Task.Supervisor, [[name: Exls.TaskSupervisor]]),
-      worker(Task, [Exls.Server, :listen, [port]]),
+      worker(Task, [Exls.Server, :accept, [port]]),
     ]
 
     opts = [strategy: :one_for_one, name: Exls.Supervisor]
@@ -16,10 +16,14 @@ defmodule Exls.Server do
     Supervisor.start_link(children, opts)
   end
 
+  def accept(port) do
+    {:ok, socket} = listen(port)
+    loop_acceptor(socket)
+  end
+
   def listen(port) do
     {:ok, socket} = :gen_tcp.listen(port, @options)
-    Logger.debug "Listening on port #{port}."
-    loop_acceptor(socket)
+    {:ok, socket}
   end
   
   defp loop_acceptor(socket) do
