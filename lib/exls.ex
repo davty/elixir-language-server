@@ -3,7 +3,6 @@ defmodule Exls do
   @default_port 63212
 
   def main(args) do
-    import Supervisor.Spec
 
     options = OptionParser.parse(args)
 
@@ -12,14 +11,7 @@ defmodule Exls do
       nil -> @default_port
     end
 
-    children = [
-      supervisor(Task.Supervisor, [[name: Exls.TaskSupervisor]]),
-      worker(Task, [Exls.Server, :start, [port]]),
-    ]
-
-    opts = [strategy: :one_for_one, name: Exls.Supervisor]
-
-    Supervisor.start_link(children, opts)
+    Exls.Server.start(port)
 
     :timer.sleep(:infinity)
   end

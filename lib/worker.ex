@@ -8,8 +8,8 @@ defmodule Exls.Worker do
   alias Exls.Protocol.Reader
   alias Exls.Protocol.Writer
 
-  def handle_message(client, agent) do
-    message = Reader.read(client)
+  defp handle_message_internal(client, agent, message) do
+
     Logger.debug "<#{id(agent)}> Got message, method: #{message["method"]}"
     case message["method"] do
       "initialize" -> initialize(client, message, agent)
@@ -17,11 +17,23 @@ defmodule Exls.Worker do
       "textDocument/didOpen" -> text_document_did_change(client, message)
       "textDocument/didSave" -> text_document_did_change(client, message)
       "textDocument/hover" -> hover(client, message)
-      _ -> IO.puts("no!")
+       _ -> method_not_found(client)
     end
 
     unless message["method"] == "shutdown" do
       handle_message(client, agent)
+    end
+  end
+
+  def method_not_found(client) do
+    Writer.error(client, -32601, "Method not implemented.")
+  end
+
+  def handle_message(client, agent) do
+    message1 = Reader.read(client)
+    case message1 do
+      {:ok, message} -> handle_message_internal(client, agent, message) 
+      :closed -> IO.inspect "closed connection quitting"
     end
   end
 

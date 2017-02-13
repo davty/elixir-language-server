@@ -1,16 +1,21 @@
 defmodule Exls.Protocol.Reader do
 
   def read(socket) do
-    content_length = read_content_length(socket)
-    read_body(socket, content_length)
+    case read_content_length(socket) do
+      {:ok, content_length} -> {:ok, read_body(socket, content_length)}
+      :closed -> :closed
+    end
   end
 
   defp read_content_length(socket) do
-    read_header(socket)
-      |> String.trim
-      |> String.split
-      |> Enum.at(1)
-      |> String.to_integer
+    case read_header(socket) do
+      {:ok, header} -> {:ok, header
+        |> String.trim
+        |> String.split
+        |> Enum.at(1)
+        |> String.to_integer }
+      :closed -> :closed
+    end
   end
 
   defp read_header(socket) do
@@ -18,17 +23,23 @@ defmodule Exls.Protocol.Reader do
   end
 
   defp read_body(socket, content_length) do
-    {:ok, body} = :gen_tcp.recv(socket, content_length)
-    Poison.Parser.parse! body
+    case :gen_tcp.recv(socket, content_length) do
+      {:ok, body} -> Poison.Parser.parse! body
+      {:error, :closed} -> :closed
+    end
   end
 
   defp read_header(socket, buffer) do
     if String.ends_with?(buffer, "\r\n") do
-      :gen_tcp.recv(socket, 2)
-      buffer
+      case :gen_tcp.recv(socket, 2) do
+       {:ok, _} -> {:ok, buffer}
+       {:error, :closed} -> :closed
+      end
     else
-      {:ok, message} = :gen_tcp.recv(socket, 1)
-      read_header(socket, buffer <> message)
+      case :gen_tcp.recv(socket, 1) do
+        {:ok, message} -> read_header(socket, buffer <> message)
+        {:error, :closed} -> :closed
+      end
     end
   end
 end

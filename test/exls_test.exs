@@ -2,37 +2,33 @@ defmodule ExlsTest do
   use ExUnit.Case
   doctest Exls
 
-  #setup do
-    #Exls.main([])
+  alias Exls.Protocol.Writer
+  alias Exls.Protocol.Reader
 
-    #{:ok, socket} = :gen_tcp.connect('localhost', 63213, [:binary, active: false])
-    #{:ok, [socket: socket]}
-  #end
+  setup do
+    Exls.Server.start(63212)
+   :ok
+  end
 
-  @tag :skip
-  test " initialize", %{socket: socket} do
-    :ok = :gen_tcp.send(socket, "Hello, world!\n")
-
-    case :gen_tcp.recv(socket, 0) do
-      {:ok, response} ->
-        assert response == "Hello, world!\n"
-        # assert response == "!dlrow ,olleH\n"
-      {:error, reason} ->
-        flunk "Did notreceiveresponse: #{reason}"
+  setup do
+    opts = [:binary, active: false]
+    {:ok, socket} = :gen_tcp.connect('localhost', 63212, opts)
+    on_exit fn ->
+      Writer.call(socket, "shutdown", %{})
     end
+
+    {:ok, socket: socket}
+  end
+  
+  test "should respond to initialize with capabilities", %{socket: socket} do
+    Writer.call(socket, "initialize", %{})
+    {:ok, response} = Reader.read(socket)
+    assert Map.has_key?(response["result"], "capabilities")
   end
 
-  test "credo integration" do 
-    code = """
-defmodule ExampleModule do
-  def example(n) do
-    n + 1
-  end
-end
-""" 
-    result = Exls.Credo.run code
-    IO.inspect result
-
-    assert 1 == 1
+  test "should respond with error code for any method that is not implemented", %{socket: socket} do
+    Writer.call(socket, "unknown_method", %{})
+    {:ok, response} = Reader.read(socket)
+    assert response["code"] == -32601
   end
 end

@@ -1,10 +1,22 @@
 require Logger
 
 defmodule Exls.Server do
-  @options [:binary, active: false]
+  @options [:binary, active: false, reuseaddr: true]
 
   def start(port) do
-    Logger.info "Language servers started."
+    import Supervisor.Spec
+
+    children = [
+      supervisor(Task.Supervisor, [[name: Exls.TaskSupervisor]]),
+      worker(Task, [Exls.Server, :listen, [port]]),
+    ]
+
+    opts = [strategy: :one_for_one, name: Exls.Supervisor]
+
+    Supervisor.start_link(children, opts)
+  end
+
+  def listen(port) do
     {:ok, socket} = :gen_tcp.listen(port, @options)
     Logger.debug "Listening on port #{port}."
     loop_acceptor(socket)
